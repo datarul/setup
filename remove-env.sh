@@ -3,10 +3,12 @@
 # Renk tanımlamaları
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+GRAY='\033[0;90m'
 NC='\033[0m'
 
 # Env dosyasını kontrol et ve sil
-ENV_FILE=~/datarul/.env
+ENV_FILE=.env
 
 if [ -f "$ENV_FILE" ]; then
     # Önce değişkenleri unset et
@@ -26,8 +28,8 @@ if [ -f "$ENV_FILE" ]; then
     echo -e "${GREEN}Ortam değişkenleri başarıyla silindi.${NC}"
 
     # Kullanıcıya hatırlatma
-    echo "Eğer ~/.bashrc veya ~/.zshrc dosyanıza 'source ~/datarul/.env' satırını eklediyseniz,"
-    echo "lütfen bu satırı da kaldırın."
+    echo -e "${GRAY}Eğer ~/.bashrc veya ~/.zshrc dosyanıza 'source .env' satırını eklediyseniz,${NC}"
+    echo -e "${GRAY}lütfen bu satırı da kaldırın.${NC}"
 else
-    echo -e "${YELLOW}Ortam değişkenleri dosyası bulunamadı.${NC}"
+    echo -e "${YELLOW}Ortam değişkenleri dosyası (.env) bulunamadı.${NC}"
 fi

@@ -11,7 +11,17 @@ echo "-----------------------------"
 
 FAIL_COUNT=0
 
+# Sunucu hazırlığı için gerekli adımlar
+echo -e "\n${YELLOW}Sunucu Hazırlığı İçin Gerekli Adımlar:${NC}"
+echo "-----------------------------"
+echo "1. Git Kurulumu"
+echo "  RHEL/CentOS: ${GREEN}yum install git${NC}"
+echo "  Ubuntu/Debian: ${GREEN}apt-get install git${NC}"
+echo "  SUSE: ${GREEN}zypper install git${NC}"
+
 # Internet bağlantısı kontrolü
+echo -e "\n${YELLOW}Sistem Kontrolleri:${NC}"
+echo "-----------------------------"
 echo -n "Internet Bağlantısı: "
 if curl -s --head https://github.com > /dev/null; then
     echo -e "${GREEN}OK${NC}"
@@ -45,13 +55,13 @@ fi
 
 # Kurulum dizini kontrolü
 echo -n "Kurulum Dizini: "
-if [ "$(pwd)" == "$HOME/datarul" ]; then
+CURRENT_DIR=$(pwd)
+if [ -f "$CURRENT_DIR/docker-compose.yml" ] && [ -f "$CURRENT_DIR/deploy.sh" ]; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}HATA${NC}"
-    echo "  Script ~/datarul dizininde çalıştırılmalıdır!"
-    echo "  Lütfen repoyu şu şekilde klonlayın:"
-    echo "  git clone https://github.com/datarul/setup.git ~/datarul"
+    echo "  Script Datarul kurulum dizininde çalıştırılmalıdır!"
+    echo "  Lütfen docker-compose.yml ve deploy.sh dosyalarının bulunduğu dizinde çalıştırın."
     ((FAIL_COUNT++))
 fi
 

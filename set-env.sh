@@ -88,7 +88,7 @@ echo -e "${GREEN}Datarul Ortam Değişkenleri Ayarlama${NC}"
 echo "----------------------------------------"
 
 # Mevcut değerleri kontrol et
-ENV_FILE=~/datarul/.env
+ENV_FILE=.env
 if [ -f "$ENV_FILE" ]; then
     source "$ENV_FILE"
     echo -e "${GRAY}Mevcut ayarlar $ENV_FILE dosyasından yüklendi${NC}"
@@ -102,57 +102,76 @@ list_env_vars
 echo -e "\n${GREEN}Yeni Değerleri Ayarlayın:${NC}"
 
 # GitHub kullanıcı adını al
-echo -n "GitHub kullanıcı adınız [datarul]: "
+echo -n "GitHub kullanıcı adınız [${GITHUB_USERNAME:-datarul}]: "
 read username
 if [ -z "$username" ]; then
-    GITHUB_USERNAME="datarul"  # Varsayılan değeri burada set et
-    echo "GitHub kullanıcı adı varsayılan değer (datarul) olarak ayarlandı."
+    GITHUB_USERNAME=${GITHUB_USERNAME:-datarul}  # Mevcut değeri koru veya varsayılanı kullan
 else
     GITHUB_USERNAME=$username
-    echo "GitHub kullanıcı adı $GITHUB_USERNAME olarak ayarlandı."
 fi
+echo "GitHub kullanıcı adı $GITHUB_USERNAME olarak ayarlandı."
 
 # GitHub token'ı al
-echo -n "GitHub kişisel erişim tokeniniz [$GITHUB_TOKEN]: "
+echo -n "GitHub kişisel erişim tokeniniz [${GITHUB_TOKEN:+******}]: "
 read -s token
 echo
-GITHUB_TOKEN=${token:-$GITHUB_TOKEN}
+if [ -z "$token" ]; then
+    if [ -z "$GITHUB_TOKEN" ]; then
+        echo -e "${RED}Hata: GitHub token gereklidir!${NC}"
+        exit 1
+    fi
+else
+    GITHUB_TOKEN=$token
+fi
 
 # Subnet değerini al (opsiyonel)
-echo -n "Docker network subnet (Otomatik atama için boş bırakın) [örn: 172.12.0.0/24]: "
+echo -e "\n${GRAY}Önerilen Özel IP Aralıkları:${NC}"
+echo -e "${GRAY}  • 10.0.0.0/8${NC}"
+echo -e "${GRAY}  • 172.16.0.0/12${NC}"
+echo -e "${GRAY}  • 192.168.0.0/16${NC}"
+echo -n "Docker network subnet [${DATARUL_SUBNET:-otomatik}]: "
 read subnet
 if [ -z "$subnet" ]; then
-    unset DATARUL_SUBNET
-    echo "Subnet değeri belirtilmedi. Docker otomatik atama yapacak."
+    DATARUL_SUBNET=${DATARUL_SUBNET}  # Mevcut değeri koru (boş olabilir)
 else
     DATARUL_SUBNET=$subnet
+fi
+if [ -z "$DATARUL_SUBNET" ]; then
+    echo "Subnet değeri belirtilmedi. Docker otomatik atama yapacak."
+else
     echo "Subnet değeri $DATARUL_SUBNET olarak ayarlandı."
 fi
 
 # API URL değerini al (opsiyonel)
-echo -n "API URL (Otomatik ayar için boş bırakın) [örn: http://localhost:5100]: "
+echo -e "\n${GRAY}Örnek API URL'leri:${NC}"
+echo -e "${GRAY}  • http://localhost:5100${NC}"
+echo -e "${GRAY}  • https://api.datarul.com${NC}"
+echo -e "${GRAY}  • https://test.datarul.com/api${NC}"
+echo -n "API URL [${DATARUL_API_URL:-otomatik}]: "
 read api_url
 if [ -z "$api_url" ]; then
-    unset DATARUL_API_URL
-    echo "API URL belirtilmedi. Otomatik ayarlanacak."
+    DATARUL_API_URL=${DATARUL_API_URL}  # Mevcut değeri koru (boş olabilir)
 else
     DATARUL_API_URL=$api_url
+fi
+if [ -z "$DATARUL_API_URL" ]; then
+    echo "API URL belirtilmedi. Otomatik ayarlanacak."
+else
     echo "API URL $DATARUL_API_URL olarak ayarlandı."
 fi
 
 # Environment değerini al
-echo -n "Environment [test]: "
+echo -n "Environment [${DATARUL_ENV:-test}]: "
 read env
 if [ -z "$env" ]; then
-    unset DATARUL_ENV
-    echo "Environment belirtilmedi. Varsayılan değer (test) kullanılacak."
+    DATARUL_ENV=${DATARUL_ENV:-test}  # Mevcut değeri koru veya varsayılanı kullan
 else
     DATARUL_ENV=$env
-    echo "Environment $DATARUL_ENV olarak ayarlandı."
 fi
+echo "Environment $DATARUL_ENV olarak ayarlandı."
 
 # .NET image tag değerini al
-echo -n ".NET image tag [latest]: "
+echo -n ".NET image tag [${DATARUL_DOTNET_TAG:-latest}]: "
 read tag
 if [ -z "$tag" ]; then
     unset DATARUL_DOTNET_TAG
@@ -163,7 +182,7 @@ else
 fi
 
 # Frontend image tag değerini al
-echo -n "Frontend image tag [latest]: "
+echo -n "Frontend image tag [${DATARUL_FRONTEND_TAG:-latest}]: "
 read frontend_tag
 if [ -z "$frontend_tag" ]; then
     unset DATARUL_FRONTEND_TAG
@@ -174,7 +193,7 @@ else
 fi
 
 # SQL Parser image tag değerini al
-echo -n "SQL Parser image tag [latest]: "
+echo -n "SQL Parser image tag [${DATARUL_SQLPARSER_TAG:-latest}]: "
 read sqlparser_tag
 if [ -z "$sqlparser_tag" ]; then
     unset DATARUL_SQLPARSER_TAG
@@ -185,7 +204,7 @@ else
 fi
 
 # SQL Parser log dizinini al
-echo -n "SQL Parser log dizini [logs]: "
+echo -n "SQL Parser log dizini [${DATARUL_SQLPARSER_LOG_DIR:-logs}]: "
 read log_dir
 if [ -z "$log_dir" ]; then
     unset DATARUL_SQLPARSER_LOG_DIR
@@ -233,7 +252,7 @@ DATARUL_MODULES=$modules
 echo -e "\nSeçilen modüller: ${GREEN}$DATARUL_MODULES${NC}"
 
 # Değerleri dosyaya kaydet ve yükle
-cat > ~/datarul/.env << EOF
+cat > .env << EOF
 export GITHUB_USERNAME="${GITHUB_USERNAME}"
 export GITHUB_TOKEN="${GITHUB_TOKEN}"
 export DATARUL_MODULES="${DATARUL_MODULES}"
@@ -246,25 +265,25 @@ EOF
 
 # Eğer subnet tanımlandıysa dosyaya ekle
 if [ -n "$DATARUL_SUBNET" ]; then
-    echo "export DATARUL_SUBNET=\"${DATARUL_SUBNET}\"" >> ~/datarul/.env
+    echo "export DATARUL_SUBNET=\"${DATARUL_SUBNET}\"" >> .env
 fi
 
 # Eğer API URL tanımlandıysa dosyaya ekle
 if [ -n "$DATARUL_API_URL" ]; then
-    echo "export DATARUL_API_URL=\"${DATARUL_API_URL}\"" >> ~/datarul/.env
+    echo "export DATARUL_API_URL=\"${DATARUL_API_URL}\"" >> .env
 fi
 
 # Dosyaya execute izni verme
-chmod 600 ~/datarul/.env
+chmod 600 .env
 
 # Mevcut oturuma değişkenleri yükle
-source ~/datarul/.env
+source .env
 
 echo -e "${GREEN}Ortam değişkenleri başarıyla kaydedildi.${NC}"
-echo "Değişkenler ~/datarul/.env dosyasına kaydedildi."
+echo "Değişkenler .env dosyasına kaydedildi."
 
 # Güncel değerleri listele
 list_env_vars
 
 echo "Her oturum açılışında değişkenlerin otomatik olarak yüklenmesi için ~/.bashrc veya ~/.zshrc dosyanıza şu satırı ekleyin:"
-echo -e "${GREEN}source ~/datarul/.env${NC}"
+echo -e "${GREEN}source .env${NC}"

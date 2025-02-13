@@ -1,5 +1,3 @@
-version: '3.8'
-
 volumes:
   data_portainer:
   data_db:
@@ -14,7 +12,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: ${DATARUL_SUBNET:+${DATARUL_SUBNET}}
+        - subnet: ${DATARUL_SUBNET:-172.12.0.0/24}
 
 services:
   portainer:
@@ -108,7 +106,7 @@ services:
       - data_pgadmin:/var/lib/pgadmin
 
   app-frontend:
-    image: ghcr.io/datarul/app-frontend:${DATARUL_FRONTEND_TAG:-latest}
+    image: ghcr.io/datarul/app:${DATARUL_FRONTEND_TAG:-latest}
     container_name: app-frontend
     restart: always
     ports:

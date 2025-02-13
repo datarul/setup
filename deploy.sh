@@ -8,14 +8,27 @@ BLUE='\033[0;34m'
 GRAY='\033[0;90m'
 NC='\033[0m'
 
-# Change directory if not in the correct path
-if [ ! "$(pwd)" == "~/datarul" ]; then
-  cd ~/datarul
+# Parametre kontrolü
+PRUNE_IMAGES=true
+for arg in "$@"; do
+    case $arg in
+        --no-prune)
+            PRUNE_IMAGES=false
+            shift
+            ;;
+    esac
+done
+
+# Gerekli dosyaların varlığını kontrol et
+if [ ! -f "docker-compose.yml" ] || [ ! -f ".env" ]; then
+    echo -e "${RED}Hata: Gerekli dosyalar bulunamadı!${NC}"
+    echo "Lütfen scripti Datarul kurulum dosyalarının bulunduğu dizinde çalıştırın."
+    exit 1
 fi
 
 # Ortam değişkenlerini yükle
-if [ -f .env ]; then
-    source .env
+if [ -f ".env" ]; then
+    source ".env"
     echo -e "${GRAY}Ortam değişkenleri .env dosyasından yüklendi${NC}"
 else
     echo -e "${RED}Hata: .env dosyası bulunamadı!${NC}"
@@ -33,47 +46,18 @@ error_exit()
     exit $exit_code
 }
 
-# Container listesi
-containers=(
-    "api-gateway"
-    "api-auth"
-    "api-shared"
-    "api-bg"
-    "api-dd"
-    "api-rc"
-    "api-dl"
-    "api-dq"
-    "api-de"
-    "worker-dd"
-    "worker-dq"
-    "app-frontend"
-)
-
 echo -e "\n${BLUE}Datarul Deployment${NC}"
 echo -e "${GRAY}---------------------------${NC}"
 
-echo -e "\n${YELLOW}1. Container'ları Durdur${NC}"
-for container in "${containers[@]}"; do
-    echo -n "Durduruluyor: $container ... "
-    if docker stop $container >/dev/null 2>&1; then
-        echo -e "${GREEN}OK${NC}"
-    else
-        echo -e "${GRAY}Zaten Durmuş${NC}"
-    fi
-done
+# Mevcut container'ları durdur ve kaldır
+./stop.sh --remove || error_exit "Container'lar durdurulamadı"
 
-echo -e "\n${YELLOW}2. Container'ları Kaldır${NC}"
-for container in "${containers[@]}"; do
-    echo -n "Kaldırılıyor: $container ... "
-    if docker rm $container >/dev/null 2>&1; then
-        echo -e "${GREEN}OK${NC}"
-    else
-        echo -e "${GRAY}Mevcut Değil${NC}"
-    fi
-done
-
-echo -e "\n${YELLOW}3. Kullanılmayan Image'ları Temizle${NC}"
-docker image prune -fa
+if [ "$PRUNE_IMAGES" = true ]; then
+    echo -e "\n${YELLOW}3. Kullanılmayan Image'ları Temizle${NC}"
+    docker image prune -fa
+else
+    echo -e "\n${GRAY}Image temizleme adımı atlandı (--no-prune)${NC}"
+fi
 
 echo -e "\n${YELLOW}4. GitHub Container Registry'e Giriş${NC}"
 if echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin; then

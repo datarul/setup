@@ -59,7 +59,11 @@ Deployment için aşağıdaki ortam değişkenlerinin tanımlanması gerekmekted
 3. Deployment scriptini çalıştırın:
 
     ```bash
+    # Tüm adımları çalıştır
     ./deploy.sh
+
+    # Image temizleme adımını atla
+    ./deploy.sh --no-prune
     ```
 
 ## Kurulum Dizini
@@ -70,4 +74,22 @@ Her oturum açılışında değişkenlerin otomatik olarak yüklenmesi için ~/.
 
 ```bash
 source ~/datarul/.env
+```
+
+## Container Yönetimi
+
+Container'ları durdurmak veya kaldırmak için:
+
+```bash
+# Sadece container'ları durdur
+./stop.sh
+
+# Container'ları durdur ve kaldır
+./stop.sh --remove
+```
+
+Bağlantı testini yapın:
+
+```bash
+./test-connection.sh
 ```
