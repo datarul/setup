@@ -126,10 +126,11 @@ fi
 
 # Subnet değerini al (opsiyonel)
 echo -e "\n${GRAY}Önerilen Özel IP Aralıkları:${NC}"
-echo -e "${GRAY}  • 10.0.0.0/8${NC}"
-echo -e "${GRAY}  • 172.16.0.0/12${NC}"
-echo -e "${GRAY}  • 192.168.0.0/16${NC}"
-echo -n "Docker network subnet [${DATARUL_SUBNET:-otomatik}]: "
+echo -e "${GRAY}  • 10.0.0.0/8     (10.0.0.0 - 10.255.255.255)${NC}"
+echo -e "${GRAY}  • 172.16.0.0/12   (172.16.0.0 - 172.31.255.255)${NC}"
+echo -e "${GRAY}  • 192.168.0.0/16  (192.168.0.0 - 192.168.255.255)${NC}"
+echo -e "${GRAY}Varsayılan: 172.25.0.0/16 (172.25.0.0 - 172.25.255.255)${NC}"
+echo -n "Docker network subnet [${DATARUL_SUBNET:-172.25.0.0/16}]: "
 read subnet
 if [ -z "$subnet" ]; then
     DATARUL_SUBNET=${DATARUL_SUBNET}  # Mevcut değeri koru (boş olabilir)
