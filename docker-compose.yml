@@ -1,0 +1,265 @@
+version: '3.8'
+
+volumes:
+  data_portainer:
+  data_db:
+  data_db_wal:
+  data_pgadmin:
+  rabbitmq_data:
+  rabbitmq_log:
+  seq_data:
+
+networks:
+  datarul-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DATARUL_SUBNET:+${DATARUL_SUBNET}}
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    ports:
+      - 9443:9443
+    volumes:
+      - data_portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      - datarul-network
+
+  seq:
+    image: "datalust/seq:latest"
+    container_name: seq
+    ports:
+      - "5341:80"
+    volumes:
+      - seq_data:/data
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+    networks:
+      - datarul-network
+
+  rabbitmq:
+    hostname: "rabbitmq"
+    image: rabbitmq:management-alpine
+    container_name: "rabbitmq"
+    restart: always
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # RabbitMQ Management UI
+      - "15674:15674" # WebStomp port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_log:/var/log/rabbitmq/
+    networks:
+      - datarul-network
+    command:
+      [
+        "sh",
+        "-c",
+        "rabbitmq-plugins enable rabbitmq_web_stomp && rabbitmq-server",
+      ]
+
+  db:
+    image: postgres:15.1-alpine
+    container_name: db-server
+    restart: always
+    ports:
+      - "7201:5432"
+    networks:
+      - datarul-network
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1196
+      POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=tr-TR"
+      LANG: tr_TR.UTF-8
+      POSTGRES_INITDB_WALDIR: "/var/lib/postgresql/wal"
+    command:
+      - "postgres"
+      - "-c"
+      - "default_text_search_config=pg_catalog.turkish"
+      - "-c"
+      - "lc_messages=tr_TR.UTF-8"
+      - "-c"
+      - "lc_monetary=tr_TR.UTF-8"
+      - "-c"
+      - "lc_numeric=tr_TR.UTF-8"
+      - "-c"
+      - "lc_time=tr_TR.UTF-8"
+    volumes:
+      - data_db:/var/lib/postgresql/data
+      - data_db_wal:/var/lib/postgresql/wal
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin4
+    restart: always
+    ports:
+      - "7200:80"
+    networks:
+      - datarul-network
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - data_pgadmin:/var/lib/pgadmin
+
+  app-frontend:
+    image: ghcr.io/datarul/app-frontend:${DATARUL_FRONTEND_TAG:-latest}
+    container_name: app-frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - datarul-network
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    environment:
+      VITE_MODULES: ${DATARUL_MODULES}
+      VITE_API_URL: ${DATARUL_API_URL:+${DATARUL_API_URL}}
+
+  api-gateway:
+    image: ghcr.io/datarul/api-gateway:${DATARUL_DOTNET_TAG:-latest}
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "5100:5100"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  api-auth:
+    image: ghcr.io/datarul/api-auth:${DATARUL_DOTNET_TAG:-latest}
+    container_name: api-auth
+    restart: always
+    ports:
+      - "5101:5101"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+      DATARUL_Audience__PreventConcurrentSessions: "false"
+      DATARUL_RabbitOptions__WebSocketEndpoint: "wss://demo.datarul.com/ws"
+
+  api-shared:
+    image: ghcr.io/datarul/api-shared:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-shared
+    restart: always
+    ports:
+      - "5110:5110"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  api-bg:
+    image: ghcr.io/datarul/api-business-glossary:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-bg
+    restart: always
+    ports:
+      - "5102:5102"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  api-dd:
+    image: ghcr.io/datarul/api-data-dictionary:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-dd
+    restart: always
+    ports:
+      - "5103:5103"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  api-rc:
+    image: ghcr.io/datarul/api-report-catalog:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-rc
+    restart: always
+    ports:
+      - "5105:5105"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  api-dl:
+    image: ghcr.io/datarul/api-data-lineage:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-dl
+    restart: always
+    ports:
+      - "5106:5106"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  api-dq:
+    image: ghcr.io/datarul/api-data-quality:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-dq
+    restart: always
+    ports:
+      - "5107:5107"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  api-de:
+    image: ghcr.io/datarul/api-data-export:${DATARUL_IMAGE_TAG:-latest}
+    container_name: api-de
+    restart: always
+    ports:
+      - "5104:5104"
+    networks:
+      - datarul-network
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
+
+  worker-importer:
+    image: ghcr.io/datarul/worker-importer:${DATARUL_IMAGE_TAG:-latest}
+    container_name: worker-dd
+    restart: always
+    networks:
+      - datarul-network
+    environment:
+      DOTNET_ENVIRONMENT: ${DATARUL_ENV:-test}
+    depends_on:
+      - db
+      - rabbitmq
+
+  worker-dq:
+    image: ghcr.io/datarul/worker-data-quality:${DATARUL_IMAGE_TAG:-latest}
+    container_name: worker-dq
+    restart: always
+    networks:
+      - datarul-network
+    environment:
+      DOTNET_ENVIRONMENT: ${DATARUL_ENV:-test}
+    depends_on:
+      - db
+      - rabbitmq
+
+  sqlparser.api:
+    image: ghcr.io/datarul/api-sql-parser:${DATARUL_SQLPARSER_TAG:-latest}
+    container_name: api-sqlparser
+    ports:
+      - "5200:5200"
+    networks:
+      - datarul-network
+    restart: unless-stopped
+    environment:
+      - LOG_DIRECTORY=${DATARUL_SQLPARSER_LOG_DIR:-logs}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
