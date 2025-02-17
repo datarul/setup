@@ -129,8 +129,6 @@ services:
       - datarul-network
     environment:
       ASPNETCORE_ENVIRONMENT: ${DATARUL_ENV:-test}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   api-auth:
     image: ghcr.io/datarul/api-auth:${DATARUL_DOTNET_TAG:-latest}

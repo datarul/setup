@@ -46,8 +46,28 @@ error_exit()
     exit $exit_code
 }
 
+# Nginx konfigürasyonunu hazırla
+setup_nginx_config() {
+    echo -e "\n${YELLOW}Nginx Konfigürasyonu Hazırlanıyor${NC}"
+    if [ -f "nginx/conf.d/00-upstream.conf.template" ]; then
+        # Host IP'sini al
+        HOST_IP=$(hostname -I | awk '{print $1}')
+
+        # Template'i işle ve konfigürasyon dosyasını oluştur
+        sed "s/\${HOST_IP}/$HOST_IP/g" nginx/conf.d/00-upstream.conf.template > nginx/conf.d/00-upstream.conf
+
+        echo -e "${GREEN}✓${NC} Nginx konfigürasyonu oluşturuldu (Host IP: $HOST_IP)"
+    else
+        echo -e "${RED}✗${NC} Nginx template dosyası bulunamadı!"
+        exit 1
+    fi
+}
+
+# Ana deployment akışı
 echo -e "\n${BLUE}Datarul Deployment${NC}"
 echo -e "${GRAY}---------------------------${NC}"
+
+setup_nginx_config
 
 # Mevcut container'ları durdur ve kaldır
 ./stop.sh --remove || error_exit "Container'lar durdurulamadı"
