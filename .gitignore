@@ -1,1 +1,2 @@
 .env
+nginx/conf.d/00-upstream.conf
