@@ -25,14 +25,14 @@ Deployment için aşağıdaki ortam değişkenlerinin tanımlanması gerekmekted
     ```bash
     export GITHUB_USERNAME="datarul"  # Opsiyonel, varsayılan: datarul
     export GITHUB_TOKEN="github_kisisel_erisim_tokeniniz"
-    export DATARUL_MODULES="BG|DD|RC|DL|DQ"
-    export DATARUL_SUBNET="172.12.0.0/24"  # Opsiyonel, tanımlanmazsa Docker otomatik subnet atar
-    export DATARUL_API_URL="http://localhost:5100"  # Opsiyonel, varsayılan: http://localhost:5100
+    export DATARUL_MODULES="BG|DD|RC|DL|DQ"  # Aktif modüller
+    export DATARUL_SUBNET="172.25.0.0/16"  # Opsiyonel, varsayılan: 172.25.0.0/16
+    export DATARUL_API_URL="http://sunucu_ip"  # Opsiyonel, varsayılan: http://sunucu_ip
     export DATARUL_ENV="test"  # Opsiyonel, varsayılan: test
-    export DATARUL_DOTNET_TAG="latest"      # .NET uygulamaları için, varsayılan: latest
-    export DATARUL_FRONTEND_TAG="latest"    # Frontend uygulaması için, varsayılan: latest
-    export DATARUL_SQLPARSER_TAG="latest"   # SQL Parser uygulaması için, varsayılan: latest
-    export DATARUL_SQLPARSER_LOG_DIR="logs" # SQL Parser log dizini, varsayılan: logs
+    export DATARUL_DOTNET_TAG="latest"  # .NET uygulamaları için, varsayılan: latest
+    export DATARUL_FRONTEND_TAG="latest"  # Frontend uygulaması için, varsayılan: latest
+    export DATARUL_SQLPARSER_TAG="latest"  # SQL Parser uygulaması için, varsayılan: latest
+    export DATARUL_SQLPARSER_LOG_DIR="logs"  # SQL Parser log dizini, varsayılan: logs
     ```
 
 3. Ortam değişkenlerini kaldırmak için:
@@ -56,7 +56,13 @@ Deployment için aşağıdaki ortam değişkenlerinin tanımlanması gerekmekted
     ./check-requirements.sh
     ```
 
-3. Deployment scriptini çalıştırın:
+3. Bağlantı testini yapın:
+
+    ```bash
+    ./test-connection.sh
+    ```
+
+4. Deployment scriptini çalıştırın:
 
     ```bash
     # Tüm adımları çalıştır
@@ -66,15 +72,13 @@ Deployment için aşağıdaki ortam değişkenlerinin tanımlanması gerekmekted
     ./deploy.sh --no-prune
     ```
 
-## Kurulum Dizini
+5. Ortam değişkenlerinin kalıcı olması için:
 
-Uygulama varsayılan olarak `~/datarul` dizinine kurulacaktır.
+    Her oturum açılışında değişkenlerin otomatik olarak yüklenmesi için ~/.bashrc veya ~/.zshrc dosyanıza şu satırı ekleyin:
 
-Her oturum açılışında değişkenlerin otomatik olarak yüklenmesi için ~/.bashrc veya ~/.zshrc dosyanıza şu satırı ekleyin:
-
-```bash
-source ~/datarul/.env
-```
+    ```bash
+    source ~/datarul/.env
+    ```
 
 ## Container Yönetimi
 
